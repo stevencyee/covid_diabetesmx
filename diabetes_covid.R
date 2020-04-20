@@ -1,6 +1,6 @@
 library(readr); library(tidyverse); library(survival); library(mediation); library(ggpubr); library(rms)
 library(survminer); library(haven); library(rsq); library(ResourceSelection); library(ggsci);library(timereg)
-## Manejo de la base de datos####
+## Database management ####
 setwd("C:/Users/HP-PC/OneDrive - UNIVERSIDAD NACIONAL AUTÓNOMA DE MÉXICO/COVID-19, Diabetes and obesity")
 setwd("/Users/nefoantonio/UNIVERSIDAD NACIONAL AUTÓNOMA DE MÉXICO/OMAR YAXMEHEN BELLO CHAVOLLA - COVID-19, Diabetes and obesity")
 
@@ -78,7 +78,7 @@ p2 <- ggplot(OR, aes(x = OR, y = breaks)) +
   ylab("") +
   xlab("Diabetes, Odds ratio (OR, 95%CI)")
 
-#Obesidad
+#Obesity
 covid_ob<- covid0 %>% filter(RESULTADO!=3,OBESIDAD==1)
 m2<-glm(covid~DIABETES*edad40+edad65+SEXO+HIPERTENSION+RENAL_CRONICA+
           ASMA+EPOC+CARDIOVASCULAR+INMUSUPR+TABAQUISMO, data=covid_ob, family="binomial")
@@ -192,7 +192,7 @@ sh1 <- ggplot(HR, aes(x = HR, y = breaks)) +
   xlab("COVID-19 vs non-COVID-19 lethality in DM, Hazard ratio (HR, 95%CI)")
 
 
-### Obesidad
+### Obesity
 covid1<-covid%>%filter(RESULTADO==1, OBESIDAD==1)
 m4<-coxph(Surv(FU_time, Mortalidad)~DIABETES*edad40+edad65+SEXO+HIPERTENSION+RENAL_CRONICA+CARDIOVASCULAR+
             ASMA+EPOC+INMUSUPR+TABAQUISMO, data=covid1)
@@ -254,7 +254,7 @@ ggsave(sf2,filename = "SuppFigure2.png",
 
 #### Other outcomes ####
 
-##UCI
+## ICU
 covid2<- covid%>%filter(RESULTADO==1)
 m3<-glm(UCI~SEXO+DIABETES*edad40+OBESIDAD+edad65, data=covid2, family="binomial")
 HR<-as.data.frame(cbind(exp(coef(m3)),exp(confint(m3))))
@@ -272,7 +272,7 @@ o1 <- ggplot(HR, aes(x = HR, y = breaks)) +
   ylab("") +
   xlab("ICU admission, Odds ratio (OR, 95%CI)")
 
-#INTUBACIÓN
+# Mechanical ventilation
 m3<-glm(INTUBADO~SEXO+DIABETES*edad40+OBESIDAD+edad65, data=covid2, family="binomial")
 HR<-as.data.frame(cbind(exp(coef(m3)),exp(confint(m3))))
 HR<-HR[-c(1),]
@@ -289,7 +289,7 @@ o2 <- ggplot(HR, aes(x = HR, y = breaks)) +
   ylab("") +
   xlab("Mechanical ventilation, Odds ratio (OR, 95%CI)")
 
-#HOSPITALIZACIÓN
+# Hospitalization
 m3<-glm(TIPO_PACIENTE~SEXO+DIABETES*edad40+OBESIDAD+edad65, data=covid2, family="binomial")
 HR<-as.data.frame(cbind(exp(coef(m3)),exp(confint(m3))))
 HR<-HR[-c(1),]
@@ -324,7 +324,6 @@ covid1<-covid%>%filter(RESULTADO==1)%>%dplyr::select(Mortalidad, FU_time, DIABET
 source("mediation_aalen_cox_ci_pval.R")
 method="Cox"
 
-#Mediador dicotómico
 set.seed(123)
 
 glm1<-glm(DIABETES~OBESIDAD+EDAD+SEXO, data=covid1, family="binomial");summary(glm1)
@@ -339,29 +338,10 @@ med_prop<-1.756423/(1.756423+1.832215)*100; med_propci1<-1.491702/(1.491702+1.54
 
 paste0("The effect of dibetes in mortality is ",round(med_prop,2),"%, 95%CI(",round(med_propci1,2),"-",round(med_propci2,2),") mediated by obesity.")
 
-## Early onset cases
-covid1<-covid%>%filter(RESULTADO==1, edad40==1)%>%dplyr::select(Mortalidad, FU_time, DIABETES, OBESIDAD, EDAD, SEXO)
-method="Cox"
-
-#Mediador dicotómico
-set.seed(123)
-
-glm1<-glm(DIABETES~OBESIDAD, data=covid1, family="binomial");summary(glm1)
-m2<-coxph(Surv(FU_time, Mortalidad)~DIABETES+OBESIDAD, data=covid1);summary(m2)
-lambdas<-m2$coefficients
-lambdas.var<-m2$var
-
-med<-mediation_ci1(lambdas[2], lambdas[1], lambdas.var[2,2], lambdas.var[2,1], lambdas.var[1,1],
-                   glm1$coef[2], vcov(glm1)[2,2], G=10^6, method=method)
-
-med_prop<-0.5924551/(43.59607)*100; med_propci1<-0.3939539/(1.045736)*100;med_propci2<-0.8102865/(1.559681)*100
-
-paste0("The effect of dibetes in mortality is ",round(med_prop,2),"%, 95%CI(",round(med_propci1,2),"-",round(med_propci2,2),") mediated by obesity.")
-
 
 #### Kaplan Meier Analysis####
 
-#En el total de la población#
+#Positive COVID-19#
 covid_km<-covid%>%filter(RESULTADO==1)%>% 
   dplyr::select(Mortalidad,FU_time,DIABETES,OBESIDAD,HIPERTENSION,edad40,comorb_d)%>% drop_na()
 
@@ -539,7 +519,7 @@ table(covid1$score_cat)
 mod1_ptcat<-coxph(Surv(FU_time, Mortalidad)~score_cat, data=covid1)
 summary(mod1_ptcat)
 
-##KM de la escala de puntos
+##KM of point score
 cox_score<- survfit(Surv(FU_time, Mortalidad) ~ score_cat, data = covid1)
 surv_pvalue(cox_score,data=covid1,method = "n",test.for.trend =TRUE)
 cox_score_cat<-ggsurvplot(cox_score, data = covid1, size = 1,palette = "bw",conf.int = T,risk.table = T,pval = TRUE,ggtheme = theme_classic(),xlab="Time (Days)",
