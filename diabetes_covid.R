@@ -501,6 +501,7 @@ covid1<-covid%>%filter(RESULTADO==1)
 mod1<-coxph(Surv((FU_time), Mortalidad)~edad65+EMBARAZO+DIABETES*edad40+OBESIDAD+NEUMONIA+RENAL_CRONICA+
               EPOC+INMUSUPR, data=covid1)
 summary(mod1)
+cox.zph(mod1)
 
 points<-round(coef(mod1)/min(abs(coef(mod1))));points
 covid1$score<-covid1$edad65*2+covid1$DIABETES+covid1$OBESIDAD*2+covid1$RENAL_CRONICA*3+covid1$EMBARAZO*6+
@@ -509,7 +510,7 @@ table(covid1$score)
 
 mod1_pts<-coxph(Surv(FU_time, Mortalidad)~score, data=covid1)
 summary(mod1_pts)
-
+cox.zph(mod1_pts)
 
 covid1$score_cat<-NULL;covid1$score_cat[covid1$score<=0]<-0
 covid1$score_cat[covid1$score>=1 & covid1$score<=3]<-1;covid1$score_cat[covid1$score>=4 & covid1$score<=6]<-2
@@ -518,6 +519,7 @@ covid1$score_cat<-as.factor(covid1$score_cat)
 table(covid1$score_cat)
 mod1_ptcat<-coxph(Surv(FU_time, Mortalidad)~score_cat, data=covid1)
 summary(mod1_ptcat)
+cox.zph(mod1_ptcat)
 
 ##KM of point score
 cox_score<- survfit(Surv(FU_time, Mortalidad) ~ score_cat, data = covid1)
