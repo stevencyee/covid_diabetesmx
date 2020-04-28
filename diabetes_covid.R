@@ -1,10 +1,12 @@
-library(readr); library(tidyverse); library(survival); library(mediation); library(ggpubr); library(rms)
+library(readr); library(tidyverse); library(survival); library(mediation); library(ggpubr); library(rms);library(caret)
 library(survminer); library(haven); library(rsq); library(ResourceSelection); library(ggsci);library(timereg)
-## Database management ####
+
+## Manejo de la base de datos####
 setwd("C:/Users/HP-PC/OneDrive - UNIVERSIDAD NACIONAL AUTÓNOMA DE MÉXICO/COVID-19, Diabetes and obesity")
 setwd("/Users/nefoantonio/UNIVERSIDAD NACIONAL AUTÓNOMA DE MÉXICO/OMAR YAXMEHEN BELLO CHAVOLLA - COVID-19, Diabetes and obesity")
 
-covid <- read_csv("200419COVID19MEXICO.csv")
+covid <- read_csv("200427COVID19MEXICO.csv")
+
 
 covid$id<-paste0(str_pad(covid$ENTIDAD_RES, 2,pad = "0"),str_pad(covid$MUNICIPIO_RES,3, pad="0"))
 covid1<-covid[,c(14:15,18:30,32:35)]
@@ -21,7 +23,7 @@ covid$diabetes_40<-NULL;covid$diabetes_40[covid$DIABETES==1 & covid$edad40==1]<-
 covid$Mortalidad<-NULL; covid$Mortalidad[is.na(covid$FECHA_DEF)]<-0;covid$Mortalidad[is.na(covid$FECHA_DEF)==FALSE]<-1
 covid$FECHA_DEF[is.na(covid$FECHA_DEF)]<-as.Date(Sys.Date())
 covid$FU_time<-as.numeric(as.Date(covid$FECHA_DEF)-as.Date(covid$FECHA_SINTOMAS))
-covid$FU_time[covid$FU_time>30]<-30
+covid$FU_time[covid$FU_time<0]<-0
 covid$Latencia<-as.numeric(as.Date(covid$FECHA_INGRESO)-as.Date(covid$FECHA_SINTOMAS))
 covid$comorb<-covid$DIABETES+covid$OBESIDAD+covid$EPOC+covid$ASMA+covid$INMUSUPR+covid$HIPERTENSION+
   covid$CARDIOVASCULAR+covid$RENAL_CRONICA+covid$TABAQUISMO+covid$OTRA_COM
@@ -78,7 +80,7 @@ p2 <- ggplot(OR, aes(x = OR, y = breaks)) +
   ylab("") +
   xlab("Diabetes, Odds ratio (OR, 95%CI)")
 
-#Obesity
+#Obesidad
 covid_ob<- covid0 %>% filter(RESULTADO!=3,OBESIDAD==1)
 m2<-glm(covid~DIABETES*edad40+edad65+SEXO+HIPERTENSION+RENAL_CRONICA+
           ASMA+EPOC+CARDIOVASCULAR+INMUSUPR+TABAQUISMO, data=covid_ob, family="binomial")
@@ -158,7 +160,7 @@ covid1<-covid%>%filter(RESULTADO==1, DIABETES==1)
 m3<-coxph(Surv(FU_time, Mortalidad)~OBESIDAD+edad40+edad65+SEXO+HIPERTENSION+RENAL_CRONICA+CARDIOVASCULAR+
             ASMA+EPOC+INMUSUPR+TABAQUISMO, data=covid1)
 HR<-as.data.frame(cbind(exp(coef(m3)),exp(confint(m3))))
-HR$Covariate<-c("Obesity", "Age >65","Age <40","Male sex","Hypertension", "CKD", "CVD",
+HR$Covariate<-c("Obesity", "Age <40","Age >65","Male sex","Hypertension", "CKD", "CVD",
                 "Asthma", "COPD", "Immunosupression", "Smoking")
 colnames(HR)<-c("HR", "ciLow", "ciHigh", "Covariate")
 HR$breaks<-seq(1:nrow(HR))
@@ -177,6 +179,7 @@ covid1<-covid%>%filter(RESULTADO!=3, DIABETES==1)
 m3<-coxph(Surv(FU_time, Mortalidad)~covid*OBESIDAD+edad40+SEXO+HIPERTENSION+RENAL_CRONICA+CARDIOVASCULAR+
             ASMA+EPOC+INMUSUPR+TABAQUISMO, data=covid1)
 HR<-as.data.frame(cbind(exp(coef(m3)),exp(confint(m3))))
+HR
 HR$Covariate<-c("COVID-19", "Obesity","Age <40","Male sex","Hypertension", "CKD", "CVD",
                 "Asthma", "COPD", "Immunosupression", "Smoking", "COVID-19*Obesity")
 colnames(HR)<-c("HR", "ciLow", "ciHigh", "Covariate")
@@ -192,7 +195,7 @@ sh1 <- ggplot(HR, aes(x = HR, y = breaks)) +
   xlab("COVID-19 vs non-COVID-19 lethality in DM, Hazard ratio (HR, 95%CI)")
 
 
-### Obesity
+### Obesidad
 covid1<-covid%>%filter(RESULTADO==1, OBESIDAD==1)
 m4<-coxph(Surv(FU_time, Mortalidad)~DIABETES*edad40+edad65+SEXO+HIPERTENSION+RENAL_CRONICA+CARDIOVASCULAR+
             ASMA+EPOC+INMUSUPR+TABAQUISMO, data=covid1)
@@ -228,6 +231,7 @@ covid1<-covid%>%filter(RESULTADO!=3, OBESIDAD==1)
 m3<-coxph(Surv(FU_time, Mortalidad)~DIABETES+covid+edad40+edad65+SEXO+HIPERTENSION+RENAL_CRONICA+CARDIOVASCULAR+
             ASMA+EPOC+INMUSUPR+TABAQUISMO, data=covid1)
 HR<-as.data.frame(cbind(exp(coef(m3)),exp(confint(m3))))
+HR
 HR$Covariate<-c("Diabetes", "COVID-19","Age <40","Age >65","Male sex","Hypertension", "CKD", "CVD",
                 "Asthma", "COPD", "Immunosupression", "Smoking")
 colnames(HR)<-c("HR", "ciLow", "ciHigh", "Covariate")
@@ -254,7 +258,7 @@ ggsave(sf2,filename = "SuppFigure2.png",
 
 #### Other outcomes ####
 
-## ICU
+##UCI
 covid2<- covid%>%filter(RESULTADO==1)
 m3<-glm(UCI~SEXO+DIABETES*edad40+OBESIDAD+edad65, data=covid2, family="binomial")
 HR<-as.data.frame(cbind(exp(coef(m3)),exp(confint(m3))))
@@ -272,7 +276,7 @@ o1 <- ggplot(HR, aes(x = HR, y = breaks)) +
   ylab("") +
   xlab("ICU admission, Odds ratio (OR, 95%CI)")
 
-# Mechanical ventilation
+#INTUBACIÓN
 m3<-glm(INTUBADO~SEXO+DIABETES*edad40+OBESIDAD+edad65, data=covid2, family="binomial")
 HR<-as.data.frame(cbind(exp(coef(m3)),exp(confint(m3))))
 HR<-HR[-c(1),]
@@ -280,7 +284,7 @@ HR$Covariate<-c("Male sex", "Diabetes", "Age <40", "Obesity","Age >65",  "Diabet
 colnames(HR)<-c("HR", "ciLow", "ciHigh", "Covariate")
 HR$breaks<-seq(1:nrow(HR))
 o2 <- ggplot(HR, aes(x = HR, y = breaks)) + 
-  geom_vline(aes(xintercept = 1), size = .25, linetype = "dashed") +
+  geom_vline(aes(xintercept = 1.0), size = .25, linetype = "dashed") +
   geom_errorbarh(aes(xmax = ciHigh, xmin = ciLow), size = .5, height = .2, color = "black") +
   geom_point(size = 3.5, color = "orange") +
   theme_classic() +
@@ -289,7 +293,7 @@ o2 <- ggplot(HR, aes(x = HR, y = breaks)) +
   ylab("") +
   xlab("Mechanical ventilation, Odds ratio (OR, 95%CI)")
 
-# Hospitalization
+#HOSPITALIZACIÓN
 m3<-glm(TIPO_PACIENTE~SEXO+DIABETES*edad40+OBESIDAD+edad65, data=covid2, family="binomial")
 HR<-as.data.frame(cbind(exp(coef(m3)),exp(confint(m3))))
 HR<-HR[-c(1),]
@@ -324,6 +328,7 @@ covid1<-covid%>%filter(RESULTADO==1)%>%dplyr::select(Mortalidad, FU_time, DIABET
 source("mediation_aalen_cox_ci_pval.R")
 method="Cox"
 
+#Mediador dicotómico
 set.seed(123)
 
 glm1<-glm(DIABETES~OBESIDAD+EDAD+SEXO, data=covid1, family="binomial");summary(glm1)
@@ -334,14 +339,32 @@ lambdas.var<-m2$var
 med<-mediation_ci1(lambdas[2], lambdas[1], lambdas.var[2,2], lambdas.var[2,1], lambdas.var[1,1],
               glm1$coef[2], vcov(glm1)[2,2], G=10^6, method=method)
 
-med_prop<-1.756423/(1.756423+1.832215)*100; med_propci1<-1.491702/(1.491702+1.546204)*100;med_propci2<-2.102500 /(2.170272+2.102500 )*100
+med_prop<-1.44021/(1.725537+1.44021)*100
+paste0("The effect of dibetes in mortality is ",round(med_prop,2),"% mediated by obesity.")
+
+## Early onset cases
+covid1<-covid%>%filter(RESULTADO==1, edad40==1)%>%dplyr::select(Mortalidad, FU_time, DIABETES, OBESIDAD, EDAD, SEXO)
+method="Cox"
+
+#Mediador dicotómico
+set.seed(123)
+
+glm1<-glm(DIABETES~OBESIDAD, data=covid1, family="binomial");summary(glm1)
+m2<-coxph(Surv(FU_time, Mortalidad)~DIABETES+OBESIDAD, data=covid1);summary(m2)
+lambdas<-m2$coefficients
+lambdas.var<-m2$var
+
+med<-mediation_ci1(lambdas[2], lambdas[1], lambdas.var[2,2], lambdas.var[2,1], lambdas.var[1,1],
+                   glm1$coef[2], vcov(glm1)[2,2], G=10^6, method=method)
+
+med_prop<-0.5924551/(43.59607)*100; med_propci1<-0.3939539/(1.045736)*100;med_propci2<-0.8102865/(1.559681)*100
 
 paste0("The effect of dibetes in mortality is ",round(med_prop,2),"%, 95%CI(",round(med_propci1,2),"-",round(med_propci2,2),") mediated by obesity.")
 
 
 #### Kaplan Meier Analysis####
 
-#Positive COVID-19#
+#En el total de la población#
 covid_km<-covid%>%filter(RESULTADO==1)%>% 
   dplyr::select(Mortalidad,FU_time,DIABETES,OBESIDAD,HIPERTENSION,edad40,comorb_d)%>% drop_na()
 
@@ -485,7 +508,7 @@ figure4<-arrange_ggsurvplots(list(cox_covid_figure3,
           cox_covid_figure6),
           ncol=2,nrow =2,)
 
-ggsave(file = "Figure3.png", 
+ggsave(file = "Figure2.png", 
        print(figure4),
        bg = "transparent",
        width = 50, 
@@ -495,36 +518,55 @@ ggsave(file = "Figure3.png",
        limitsize = FALSE)
 
 #### Mechanistic COVID-19 lethality score ####
-
-## GENERAL
 covid1<-covid%>%filter(RESULTADO==1)
-mod1<-coxph(Surv((FU_time), Mortalidad)~edad65+EMBARAZO+DIABETES*edad40+OBESIDAD+NEUMONIA+RENAL_CRONICA+
-              EPOC+INMUSUPR, data=covid1)
+
+set.seed(123)
+trainIndex <- createDataPartition(covid1$Mortalidad, p = .80,list = FALSE, times = 1)
+covid_train <- covid1[ trainIndex,]
+covid_test  <- covid1[-trainIndex,]
+
+nrow(covid_train)
+nrow(covid_test)
+## GENERAL
+mod1<-coxph(Surv(FU_time, Mortalidad)~edad65+EMBARAZO+DIABETES*edad40+OBESIDAD+NEUMONIA+RENAL_CRONICA+
+              EPOC+INMUSUPR, data=covid_train)
 summary(mod1)
 cox.zph(mod1)
 
 points<-round(coef(mod1)/min(abs(coef(mod1))));points
-covid1$score<-covid1$edad65*2+covid1$DIABETES+covid1$OBESIDAD*2+covid1$RENAL_CRONICA*3+covid1$EMBARAZO*6+
-  covid1$NEUMONIA*7+covid1$EPOC*2+covid1$INMUSUPR*2+covid1$edad40*(-5)+covid1$DIABETES*covid1$edad40*4
-table(covid1$score)
+covid_train$score<-covid_train$edad65*3+covid_train$DIABETES+covid_train$OBESIDAD+covid_train$RENAL_CRONICA*2+covid_train$EMBARAZO*4+
+  covid_train$NEUMONIA*7+covid_train$EPOC+covid_train$INMUSUPR*2+covid_train$edad40*(-6)+covid_train$DIABETES*covid_train$edad40*4
 
-mod1_pts<-coxph(Surv(FU_time, Mortalidad)~score, data=covid1)
+
+mod1_pts<-coxph(Surv(FU_time, Mortalidad)~score, data=covid_train)
 summary(mod1_pts)
 cox.zph(mod1_pts)
 
-covid1$score_cat<-NULL;covid1$score_cat[covid1$score<=0]<-0
-covid1$score_cat[covid1$score>=1 & covid1$score<=3]<-1;covid1$score_cat[covid1$score>=4 & covid1$score<=6]<-2
-covid1$score_cat[covid1$score>=7 & covid1$score<=9]<-3;covid1$score_cat[covid1$score>=10]<-4
-covid1$score_cat<-as.factor(covid1$score_cat)
-table(covid1$score_cat)
-mod1_ptcat<-coxph(Surv(FU_time, Mortalidad)~score_cat, data=covid1)
+## Calculating the score
+table(covid_train$score)
+covid_train$score_cat<-NULL;covid_train$score_cat[covid_train$score<=0]<-0
+covid_train$score_cat[covid_train$score>=1 & covid_train$score<=3]<-1;covid_train$score_cat[covid_train$score>=4 & covid_train$score<=7]<-2
+covid_train$score_cat[covid_train$score>=8 & covid_train$score<=10]<-3;covid_train$score_cat[covid_train$score>=11]<-4
+covid_train$score_cat<-as.factor(covid_train$score_cat)
+table(covid_train$score_cat)
+mod1_ptcat<-coxph(Surv(FU_time, Mortalidad)~score_cat, data=covid_train)
 summary(mod1_ptcat)
-cox.zph(mod1_ptcat)
 
-##KM of point score
-cox_score<- survfit(Surv(FU_time, Mortalidad) ~ score_cat, data = covid1)
-surv_pvalue(cox_score,data=covid1,method = "n",test.for.trend =TRUE)
-cox_score_cat<-ggsurvplot(cox_score, data = covid1, size = 1,palette = "bw",conf.int = T,risk.table = T,pval = TRUE,ggtheme = theme_classic(),xlab="Time (Days)",
+##KM de la escala de puntos
+covid_test$score<-covid_test$edad65*3+covid_test$DIABETES+covid_test$OBESIDAD+covid_test$RENAL_CRONICA*2+covid_test$EMBARAZO*4+
+  covid_test$NEUMONIA*7+covid_test$EPOC+covid_test$INMUSUPR*2+covid_test$edad40*(-6)+covid_test$DIABETES*covid_test$edad40*4
+
+
+table(covid_test$score)
+covid_test$score_cat<-NULL;covid_test$score_cat[covid_test$score<=0]<-0
+covid_test$score_cat[covid_test$score>=1 & covid_test$score<=3]<-1;covid_test$score_cat[covid_test$score>=4 & covid_test$score<=7]<-2
+covid_test$score_cat[covid_test$score>=8 & covid_test$score<=10]<-3;covid_test$score_cat[covid_test$score>=11]<-4
+covid_test$score_cat<-as.factor(covid_test$score_cat)
+table(covid_test$score_cat)
+
+cox_score<- survfit(Surv(FU_time, Mortalidad) ~ score_cat, data = covid_train)
+surv_pvalue(cox_score,data=covid_train,method = "n",test.for.trend =TRUE)
+cox_score_cat<-ggsurvplot(cox_score, data = covid_train, size = 1,palette = "bw",conf.int = T,risk.table = T,pval = TRUE,ggtheme = theme_classic(),xlab="Time (Days)",
                                                              ylab="Survival probability",
                                                              legend.labs = c("Low-Risk", 
                                                                              "Mid-Risk",
@@ -544,10 +586,35 @@ cox_score1<-cox_score_cat + theme_survminer(base_size = 10,
                                                 font.caption = c(10, "plain"), 
                                                 font.tickslab = c(10, "plain"))
 
+cox_score2<- survfit(Surv(FU_time, Mortalidad) ~ score_cat, data = covid_test)
+surv_pvalue(cox_score2,data=covid_train,method = "n",test.for.trend =TRUE)
+cox_score_cat2<-ggsurvplot(cox_score2, data = covid_test, size = 1,palette = "bw",conf.int = T,risk.table = T,pval = TRUE,ggtheme = theme_classic(),xlab="Time (Days)",
+                          ylab="Survival probability",
+                          legend.labs = c("Low-Risk", 
+                                          "Mid-Risk",
+                                          "Moderate-Risk",
+                                          "High-Risk",
+                                          "Very High Risk"),
+                          xlim = c(0,30),
+                          ylim= c(0.8,1.0),
+                          break.y.by= c(0.05),
+                          break.x.by= c(5),
+                          pval.coord = c(0, 0.80))
+
+cox_score3<-cox_score_cat2 + theme_survminer(base_size = 10,
+                                            base_family = "Arial",
+                                            font.x = c(10, "plain" ), 
+                                            font.y = c(10, "plain"),
+                                            font.caption = c(10, "plain"), 
+                                            font.tickslab = c(10, "plain"))
+
+figure5<-arrange_ggsurvplots(list(cox_score1,cox_score3),
+                             ncol=2,nrow =1)
+
 ggsave(file = "Figure5.png", 
-       print(cox_score1),
+       print(figure5),
        bg = "transparent",
-       width = 30, 
+       width = 35, 
        height = 16.6,
        units=c("cm"),
        dpi = 300,
@@ -555,22 +622,26 @@ ggsave(file = "Figure5.png",
 
 ## Cross-validation
 set.seed(123)
-mod1_pts1<-cph(Surv(FU_time, Mortalidad)~score_cat, data=covid1, x=T, y=T)
+mod1_pts1<-cph(Surv(FU_time, Mortalidad)~score, data=covid_train, x=T, y=T)
 mod1_pts1
 
 
-validate(mod1_pts1, method="crossvalidation",B=10, bw=FALSE, rule="aic",
+validate(mod1_pts1, method="crossvalidation",B=10, bw=FALSE, rule="bic",
          type="residual", sls=.05, aics=0, force=NULL, estimates=TRUE,
          pr=FALSE, dxy=TRUE)
 
 #### Figure with histograms ####
+covid1$score<-covid1$edad65*3+covid1$DIABETES+covid1$OBESIDAD+covid1$RENAL_CRONICA*2+covid1$EMBARAZO*4+
+  covid1$NEUMONIA*7+covid1$EPOC+covid1$INMUSUPR*2+covid1$edad40*(-6)+covid1$DIABETES*covid1$edad40*4
+
+
 covid4<-covid1%>% dplyr::select(FECHA_SINTOMAS,diab_ob, Mortalidad, score)%>%drop_na()
 covid4$diab_ob<-as.factor(covid4$diab_ob)
 levels(covid4$diab_ob)<-c("NoDM-NoOb", "Ob-NoDM", "DM-NoOb", "DM-Ob")
 covid4$Mortalidad<-as.factor(covid4$Mortalidad)
 levels(covid4$Mortalidad)<-c("Non-lethal cases", "Lethal cases")
 g1<-ggplot(covid4, aes(x=FECHA_SINTOMAS, fill=diab_ob))+
-  geom_histogram(col="black", binwidth = 30)+
+  geom_histogram(col="black", binwidth = 3)+
   ylab("New confirmed COVID-19 cases")+
   xlab("Symptom onset (date)")+
   theme_classic()+
@@ -582,7 +653,7 @@ g2<-ggplot(covid4, aes(x=score, fill=Mortalidad))+
   geom_histogram(aes(y=..density..),col="black",binwidth = 1)+
   ylab("Density")+xlab("Mechanistic COVID-19 score")+
   theme_classic()+
-  geom_vline(xintercept = 5, size = 1, colour = "#FF3721",linetype = "dashed")+
+  geom_vline(xintercept = 0, size = 1, colour = "#FF3721",linetype = "dashed")+
   labs(fill="Lethality")
 
 fig4<-ggarrange(g1, g2, labels = c("A", "B"), ncol=1, nrow=2)
@@ -595,3 +666,14 @@ ggsave(fig4,filename = "Figure4.2.png",
        units=c("cm"),
        dpi = 300,
        limitsize = FALSE)
+
+#### Validation ####
+#Training vs. validation
+
+mod1_pt<-coxph(Surv(FU_time, Mortalidad)~score, data=covid_test)
+summary(mod1_pt)
+cox.zph(mod1_pt)
+
+mod1_ptcat<-cph(Surv(FU_time, Mortalidad)~score_cat, data=covid_test)
+summary(mod1_ptcat)
+cox.zph(mod1_ptcat)
