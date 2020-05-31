@@ -1,11 +1,10 @@
 library(readr); library(tidyverse); library(survival); library(mediation); library(ggpubr); library(rms);library(caret)
-library(survminer); library(haven); library(rsq); library(ResourceSelection); library(ggsci);library(timereg)
+library(survminer); library(haven); library(rsq); library(ResourceSelection); library(ggsci);library(timereg); library(haven)
 
 ## Manejo de la base de datos####
-setwd("C:/Users/HP-PC/OneDrive - UNIVERSIDAD NACIONAL AUTÓNOMA DE MÉXICO/COVID-19, Diabetes and obesity")
 setwd("/Users/nefoantonio/UNIVERSIDAD NACIONAL AUTÓNOMA DE MÉXICO/OMAR YAXMEHEN BELLO CHAVOLLA - COVID-19, Diabetes and obesity")
-
-covid <- read_csv("200427COVID19MEXICO.csv")
+setwd("C:/Users/HP-PC/OneDrive - UNIVERSIDAD NACIONAL AUTÓNOMA DE MÉXICO/COVID-19, Diabetes and obesity")
+covid <- read_csv("200518COVID19MEXICO.csv")
 
 
 covid$id<-paste0(str_pad(covid$ENTIDAD_RES, 2,pad = "0"),str_pad(covid$MUNICIPIO_RES,3, pad="0"))
@@ -116,14 +115,14 @@ covid1<-covid%>%filter(RESULTADO!=3)
 m2<-coxph(Surv(FU_time, Mortalidad)~covid*OBESIDAD+edad65+edad40+SEXO+HIPERTENSION+DIABETES+RENAL_CRONICA+CARDIOVASCULAR+
             ASMA+EPOC+INMUSUPR+TABAQUISMO, data=covid1)
 HR<-as.data.frame(cbind(exp(coef(m2)),exp(confint(m2))))
-HR$Covariate<-c("COVID-19", "Obesidad", "Age >65", "Age <40","Male sex","Hypertension", "Diabetes", "CKD", "CVD",
+HR$Covariate<-c("COVID-19", "Obesity", "Age >65", "Age <40","Male sex","Hypertension", "Diabetes", "CKD", "CVD",
                 "Asthma", "COPD", "Immunosupression", "Smoking","COVID-19*Obesity")
 colnames(HR)<-c("HR", "ciLow", "ciHigh", "Covariate")
 HR$breaks<-seq(1:nrow(HR))
 h1 <- ggplot(HR, aes(x = HR, y = breaks)) + 
   geom_vline(aes(xintercept = 1), size = .25, linetype = "dashed") +
   geom_errorbarh(aes(xmax = ciHigh, xmin = ciLow), size = .5, height = .2, color = "black") +
-  geom_point(size = 3.5, color = "orange") +
+  geom_point(size = 3.5, color = "darkgray") +
   theme_classic() +
   theme(panel.grid.minor = element_blank()) +
   scale_y_continuous(breaks = HR$breaks, labels = HR$Covariate) +
@@ -136,24 +135,29 @@ covid1<-covid%>%filter(RESULTADO==1)
 ##Interaction modeling
 m2<-coxph(Surv(FU_time, Mortalidad)~DIABETES*edad40+OBESIDAD+SEXO, data=covid1)
 HR<-as.data.frame(cbind(exp(coef(m2)),exp(confint(m2))))
-HR
 #Figure
 m2<-coxph(Surv(FU_time, Mortalidad)~DIABETES*edad40+edad65+OBESIDAD+SEXO+HIPERTENSION+RENAL_CRONICA+CARDIOVASCULAR+
             ASMA+EPOC+INMUSUPR+TABAQUISMO, data=covid1)
+summary(m2)
 HR<-as.data.frame(cbind(exp(coef(m2)),exp(confint(m2))))
 HR$Covariate<-c("Diabetes", "Age <40","Age >65", "Obesity","Male sex","Hypertension", "CKD", "CVD",
                 "Asthma", "COPD", "Immunosupression", "Smoking","Diabetes*Age <40")
 colnames(HR)<-c("HR", "ciLow", "ciHigh", "Covariate")
 HR$breaks<-seq(1:nrow(HR))
+
 h2 <- ggplot(HR, aes(x = HR, y = breaks)) + 
   geom_vline(aes(xintercept = 1), size = .25, linetype = "dashed") +
   geom_errorbarh(aes(xmax = ciHigh, xmin = ciLow), size = .5, height = .2, color = "black") +
-  geom_point(size = 3.5, color = "orange") +
+  geom_point(size = 3.5, color = "darkgray") +
   theme_classic() +
   theme(panel.grid.minor = element_blank()) +
   scale_y_continuous(breaks = HR$breaks, labels = HR$Covariate) +
   ylab("") +
   xlab("COVID-19 lethality, Hazard ratio (HR, 95%CI)")
+
+m2<-coxph(Surv(FU_time, Mortalidad)~DIABETES*edad40+edad65+OBESIDAD+SEXO+HIPERTENSION+RENAL_CRONICA+CARDIOVASCULAR+
+            ASMA+EPOC+INMUSUPR+TABAQUISMO+NEUMONIA, data=covid1)
+summary(m2)
 
 #Diabetes
 covid1<-covid%>%filter(RESULTADO==1, DIABETES==1)
@@ -167,7 +171,7 @@ HR$breaks<-seq(1:nrow(HR))
 h3 <- ggplot(HR, aes(x = HR, y = breaks)) + 
   geom_vline(aes(xintercept = 1), size = .25, linetype = "dashed") +
   geom_errorbarh(aes(xmax = ciHigh, xmin = ciLow), size = .5, height = .2, color = "black") +
-  geom_point(size = 3.5, color = "orange") +
+  geom_point(size = 3.5, color = "darkgray") +
   theme_classic() +
   theme(panel.grid.minor = element_blank()) +
   scale_y_continuous(breaks = HR$breaks, labels = HR$Covariate) +
@@ -176,12 +180,12 @@ h3 <- ggplot(HR, aes(x = HR, y = breaks)) +
 
 ##Model for all COVID-19 vs. no COVID-19
 covid1<-covid%>%filter(RESULTADO!=3, DIABETES==1)
-m3<-coxph(Surv(FU_time, Mortalidad)~covid*OBESIDAD+edad40+SEXO+HIPERTENSION+RENAL_CRONICA+CARDIOVASCULAR+
+m3<-coxph(Surv(FU_time, Mortalidad)~covid+OBESIDAD+edad40+SEXO+HIPERTENSION+RENAL_CRONICA+CARDIOVASCULAR+
             ASMA+EPOC+INMUSUPR+TABAQUISMO, data=covid1)
+summary(m3)
 HR<-as.data.frame(cbind(exp(coef(m3)),exp(confint(m3))))
-HR
 HR$Covariate<-c("COVID-19", "Obesity","Age <40","Male sex","Hypertension", "CKD", "CVD",
-                "Asthma", "COPD", "Immunosupression", "Smoking", "COVID-19*Obesity")
+                "Asthma", "COPD", "Immunosupression", "Smoking")
 colnames(HR)<-c("HR", "ciLow", "ciHigh", "Covariate")
 HR$breaks<-seq(1:nrow(HR))
 sh1 <- ggplot(HR, aes(x = HR, y = breaks)) + 
@@ -207,7 +211,7 @@ HR$breaks<-seq(1:nrow(HR))
 h4 <- ggplot(HR, aes(x = HR, y = breaks)) + 
   geom_vline(aes(xintercept = 1), size = .25, linetype = "dashed") +
   geom_errorbarh(aes(xmax = ciHigh, xmin = ciLow), size = .5, height = .2, color = "black") +
-  geom_point(size = 3.5, color = "orange") +
+  geom_point(size = 3.5, color = "darkgray") +
   theme_classic() +
   theme(panel.grid.minor = element_blank()) +
   scale_y_continuous(breaks = HR$breaks, labels = HR$Covariate) +
@@ -216,12 +220,12 @@ h4 <- ggplot(HR, aes(x = HR, y = breaks)) +
 
 f2<-ggarrange(h1,h2,h3,h4,labels = c("A", "B", "C", "D"), nrow=2, ncol=2)
 
-ggsave(f2,filename = "Figure1.png", 
+ggsave(f2,filename = "Figure1.pdf", 
        bg = "transparent",
        width = 32.2, 
        height = 15,
        units=c("cm"),
-       dpi = 300,
+       dpi = 1200,
        limitsize = FALSE)
 
 #COVID mortality compared to non-COVID
@@ -231,7 +235,6 @@ covid1<-covid%>%filter(RESULTADO!=3, OBESIDAD==1)
 m3<-coxph(Surv(FU_time, Mortalidad)~DIABETES+covid+edad40+edad65+SEXO+HIPERTENSION+RENAL_CRONICA+CARDIOVASCULAR+
             ASMA+EPOC+INMUSUPR+TABAQUISMO, data=covid1)
 HR<-as.data.frame(cbind(exp(coef(m3)),exp(confint(m3))))
-HR
 HR$Covariate<-c("Diabetes", "COVID-19","Age <40","Age >65","Male sex","Hypertension", "CKD", "CVD",
                 "Asthma", "COPD", "Immunosupression", "Smoking")
 colnames(HR)<-c("HR", "ciLow", "ciHigh", "Covariate")
@@ -245,8 +248,8 @@ sh2 <- ggplot(HR, aes(x = HR, y = breaks)) +
   scale_y_continuous(breaks = HR$breaks, labels = HR$Covariate) +
   ylab("") +
   xlab("COVID-19 vs. non-COVID-19 lethality in obesity,Hazard ratio (HR, 95%CI)")
-
-sf2<-ggarrange(sh1,sh2,labels = c("A", "B", "C", "D"), nrow=1, ncol=2)
+sh2
+sf2<-ggarrange(sh1,sh2,labels = c("A", "B"), nrow=1, ncol=2)
 
 ggsave(sf2,filename = "SuppFigure2.png", 
        bg = "transparent",
@@ -269,7 +272,7 @@ HR$breaks<-seq(1:nrow(HR))
 o1 <- ggplot(HR, aes(x = HR, y = breaks)) + 
   geom_vline(aes(xintercept = 1), size = .25, linetype = "dashed") +
   geom_errorbarh(aes(xmax = ciHigh, xmin = ciLow), size = .5, height = .2, color = "black") +
-  geom_point(size = 3.5, color = "orange") +
+  geom_point(size = 3.5, color = "darkgray") +
   theme_classic() +
   theme(panel.grid.minor = element_blank()) +
   scale_y_continuous(breaks = HR$breaks, labels = HR$Covariate) +
@@ -286,7 +289,7 @@ HR$breaks<-seq(1:nrow(HR))
 o2 <- ggplot(HR, aes(x = HR, y = breaks)) + 
   geom_vline(aes(xintercept = 1.0), size = .25, linetype = "dashed") +
   geom_errorbarh(aes(xmax = ciHigh, xmin = ciLow), size = .5, height = .2, color = "black") +
-  geom_point(size = 3.5, color = "orange") +
+  geom_point(size = 3.5, color = "darkgray") +
   theme_classic() +
   theme(panel.grid.minor = element_blank()) +
   scale_y_continuous(breaks = HR$breaks, labels = HR$Covariate) +
@@ -297,14 +300,13 @@ o2 <- ggplot(HR, aes(x = HR, y = breaks)) +
 m3<-glm(TIPO_PACIENTE~SEXO+DIABETES*edad40+OBESIDAD+edad65, data=covid2, family="binomial")
 HR<-as.data.frame(cbind(exp(coef(m3)),exp(confint(m3))))
 HR<-HR[-c(1),]
-HR
-HR$Covariate<-c("Male sex", "Diabetes", "Obesity", "Age <40","Age >65",  "Diabetes*Age<40")
+HR$Covariate<-c("Male sex", "Diabetes", "Age <40", "Obesity","Age >65",  "Diabetes*Age<40")
 colnames(HR)<-c("HR", "ciLow", "ciHigh", "Covariate")
 HR$breaks<-seq(1:nrow(HR))
 o3 <- ggplot(HR, aes(x = HR, y = breaks)) + 
   geom_vline(aes(xintercept = 1), size = .25, linetype = "dashed") +
   geom_errorbarh(aes(xmax = ciHigh, xmin = ciLow), size = .5, height = .2, color = "black") +
-  geom_point(size = 3.5, color = "orange") +
+  geom_point(size = 3.5, color = "darkgray") +
   theme_classic() +
   theme(panel.grid.minor = element_blank()) +
   scale_y_continuous(breaks = HR$breaks, labels = HR$Covariate) +
@@ -313,13 +315,17 @@ o3 <- ggplot(HR, aes(x = HR, y = breaks)) +
 
 f4<-ggarrange(o1,o2,o3,labels = c("A", "B", "C"), nrow=1, ncol=3)
 
-ggsave(f4,filename = "Figure3.png", 
+ggsave(f4,filename = "Figure3.pdf", 
        bg = "transparent",
        width = 35, 
        height = 15,
        units=c("cm"),
-       dpi = 400,
+       dpi = 1200,
        limitsize = FALSE)
+
+m4<-glm(NEUMONIA~SEXO+OBESIDAD+ASMA*edad40+edad40*DIABETES+EPOC, data=covid2, family="binomial")
+summary(m4)
+
 
 #### Cox regression mediating effects ####
 
@@ -339,7 +345,7 @@ lambdas.var<-m2$var
 med<-mediation_ci1(lambdas[2], lambdas[1], lambdas.var[2,2], lambdas.var[2,1], lambdas.var[1,1],
               glm1$coef[2], vcov(glm1)[2,2], G=10^6, method=method)
 
-med_prop<-1.44021/(1.725537+1.44021)*100
+med_prop<-1.420124/(1.449046+1.420124)*100
 paste0("The effect of dibetes in mortality is ",round(med_prop,2),"% mediated by obesity.")
 
 ## Early onset cases
@@ -366,11 +372,13 @@ paste0("The effect of dibetes in mortality is ",round(med_prop,2),"%, 95%CI(",ro
 
 #En el total de la población#
 covid_km<-covid%>%filter(RESULTADO==1)%>% 
-  dplyr::select(Mortalidad,FU_time,DIABETES,OBESIDAD,HIPERTENSION,edad40,comorb_d)%>% drop_na()
+  dplyr::select(Mortalidad,FU_time,DIABETES,OBESIDAD,HIPERTENSION,edad40,comorb_d, comorb_ob)%>% drop_na()
 
 comorb_d_REC<-NULL; comorb_d_REC[covid_km$comorb_d==0]<-0; comorb_d_REC[covid_km$comorb_d>=1 & covid_km$comorb_d<=3]<-1; 
 comorb_d_REC[covid_km$comorb_d>=4]<-2; table(comorb_d_REC)
 comorb_d_DIC<-NULL; comorb_d_DIC[covid_km$comorb_d==0]<-0; comorb_d_DIC[covid_km$comorb_d>=1]<-1
+comorb_ob_DIC<-NULL; comorb_ob_DIC[covid_km$comorb_ob==0]<-0; comorb_ob_DIC[covid_km$comorb_ob>=1]<-1
+
 
 covid_km<-cbind(covid_km,comorb_d_REC,comorb_d_DIC)
 covid_km$DIABETES<-as.factor(covid_km$DIABETES)
@@ -383,18 +391,19 @@ covid_km$DIABETES <- factor(covid_km$DIABETES,levels = c(0,1),labels = c("No-DM"
 covid_km$HIPERTENSION <- factor(covid_km$HIPERTENSION,levels = c(0,1),labels = c("No-HT", "HT"))
 covid_km$comorb_d_REC<- factor(covid_km$comorb_d_REC,levels = c(0,1,2),labels = c("0", "1-3", "≥4"))
 covid_km$comorb_d_DIC<- factor(covid_km$comorb_d_DIC,levels = c(0,1),labels = c("No-Comorb", "Comorbs"))
+covid_km$comorb_ob<- factor(covid_km$comorb_ob,levels = c(0,1),labels = c("No-Comorb", "Comorbs"))
 
 ##Diabetes and comorbidities
 
 cox_covid3<- survfit(Surv(FU_time, Mortalidad) ~ comorb_d_DIC + DIABETES, data = covid_km)
 surv_pvalue(cox_covid3,data=covid_km,method = "n",test.for.trend =TRUE)
-cox_covid_figure3<-ggsurvplot(cox_covid3, data = covid_km, size = 1,palette = "bw",conf.int = F,risk.table = T,pval = TRUE,ggtheme = theme_classic(),xlab="Time (Days)",
+cox_covid_figure3<-ggsurvplot(cox_covid3, data = covid_km, size = 1,palette = "grey",conf.int = F,risk.table = T,pval = TRUE,ggtheme = theme_classic(),xlab="Time (Days)",
                               ylab="Survival probability",
                               legend.labs = c("No-DM & No-Comorb", 
                                               "DM & No-Comorb",
                                               "No-DM & Comorb",
                                               "DM & Comorb"),
-                              xlim = c(0,30),ylim= c(0.8,1.0),break.y.by= c(0.05),break.x.by= c(5),pval.coord = c(0, 0.80))
+                              xlim = c(0,30),ylim= c(0.7,1.0),break.y.by= c(0.05),break.x.by= c(5),pval.coord = c(0, 0.80))
 
 cox_covid_figure3<-cox_covid_figure3 + theme_survminer(base_size = 10,
                                                        base_family = "Arial",
@@ -409,7 +418,7 @@ cox_covid4<- survfit(Surv(FU_time, Mortalidad) ~ OBESIDAD + DIABETES, data = cov
 surv_pvalue(cox_covid4,data=covid_km,method = "n",test.for.trend =TRUE)
 cox_covid_figure4<-ggsurvplot(cox_covid4, data = covid_km,
                               size = 1,                 
-                              palette = "bw",
+                              palette = "grey",
                               conf.int = F,  
                               risk.table = T,
                               pval = TRUE,
@@ -423,7 +432,7 @@ cox_covid_figure4<-ggsurvplot(cox_covid4, data = covid_km,
                                               "No-DM & Ob",
                                               "DM & Ob"),
                               xlim = c(0,30),
-                              ylim= c(0.8,1.0),
+                              ylim= c(0.7,1.0),
                               break.y.by= c(0.05),
                               break.x.by= c(5),
                               pval.coord = c(0, 0.80),
@@ -438,12 +447,11 @@ cox_covid_figure4 <-cox_covid_figure4 + theme_survminer(base_size = 10,
 
 #Obesity and comorbidities
 
-cox_covid5<- survfit(Surv(FU_time, Mortalidad) ~ OBESIDAD + comorb_d_DIC, data = covid_km)
+cox_covid5<- survfit(Surv(FU_time, Mortalidad) ~ OBESIDAD + comorb_ob_DIC, data = covid_km)
 surv_pvalue(cox_covid5,data=covid_km,method = "n",test.for.trend =TRUE)
-cox_covid5
 cox_covid_figure5<-ggsurvplot(cox_covid5, data = covid_km,
                               size = 1,                 
-                              palette = "bw",
+                              palette = "grey",
                               conf.int = F,  
                               risk.table = T,
                               pval = TRUE,
@@ -454,9 +462,10 @@ cox_covid_figure5<-ggsurvplot(cox_covid5, data = covid_km,
                               ylab="Survival probability",
                               legend.labs = c("No-Ob & No-Comorb", 
                                               "No-Ob & Comorb",
+                                              "Ob & No-Comorb",
                                               "Ob & Comorb"),
                               xlim = c(0,30),
-                              ylim= c(0.8,1.0),
+                              ylim= c(0.75,1.0),
                               break.y.by= c(0.05),
                               break.x.by= c(5),
                               pval.coord = c(0, 0.80),
@@ -474,7 +483,7 @@ cox_covid6<- survfit(Surv(FU_time, Mortalidad) ~ DIABETES + edad40, data = covid
 surv_pvalue(cox_covid6,data=covid_km,method = "n",test.for.trend =TRUE)
 cox_covid_figure6<-ggsurvplot(cox_covid6, data = covid_km,
                               size = 1,                 
-                              palette = "bw",
+                              palette = "grey",
                               conf.int = F,  
                               risk.table = T,
                               pval = TRUE,
@@ -483,12 +492,12 @@ cox_covid_figure6<-ggsurvplot(cox_covid6, data = covid_km,
                               ggtheme = theme_classic(),
                               xlab="Time (Days)",
                               ylab="Survival probability",
-                              legend.labs = c("No-DM & Age <40", 
-                                              "DM & Age <40",
-                                              "No-DM & Age ≥40",
-                                              "DM & Age ≥40"),
+                              legend.labs = c("No-DM & Age >=40", 
+                                              "No-DM & Age <40",
+                                              "DM & Age >=40",
+                                              "DM & Age <40"),
                               xlim = c(0,30),
-                              ylim= c(0.8,1.0),
+                              ylim= c(0.7,1.0),
                               break.y.by= c(0.05),
                               break.x.by= c(5),
                               pval.coord = c(0, 0.80),
@@ -498,19 +507,17 @@ cox_covid_figure6 <-cox_covid_figure6 + theme_survminer(base_size = 10,
                                                         base_family = "Arial",
                                                         font.x = c(10, "plain" ), 
                                                         font.y = c(10, "plain"),
-                                                        font.caption = c(10, "plain"), 
+                                                        font.caption = c(10, "plain", parse=TRUE), 
                                                         font.tickslab = c(10, "plain"))
 
-cox_covid_figure6
 figure4<-arrange_ggsurvplots(list(cox_covid_figure3,
           cox_covid_figure5,
           cox_covid_figure4,
           cox_covid_figure6),
           ncol=2,nrow =2,)
 
-ggsave(file = "Figure2.png", 
+ggsave(file = "Figure2.tiff", 
        print(figure4),
-       bg = "transparent",
        width = 50, 
        height = 27.7,
        units=c("cm"),
@@ -528,14 +535,13 @@ covid_test  <- covid1[-trainIndex,]
 nrow(covid_train)
 nrow(covid_test)
 ## GENERAL
-mod1<-coxph(Surv(FU_time, Mortalidad)~edad65+EMBARAZO+DIABETES*edad40+OBESIDAD+NEUMONIA+RENAL_CRONICA+
-              EPOC+INMUSUPR, data=covid_train)
+mod1<-coxph(Surv(FU_time, Mortalidad)~edad65+DIABETES*edad40+OBESIDAD+NEUMONIA+RENAL_CRONICA+
+              EPOC+INMUSUPR+strata(SEXO), data=covid_train)
 summary(mod1)
-cox.zph(mod1)
 
 points<-round(coef(mod1)/min(abs(coef(mod1))));points
-covid_train$score<-covid_train$edad65*3+covid_train$DIABETES+covid_train$OBESIDAD+covid_train$RENAL_CRONICA*2+covid_train$EMBARAZO*4+
-  covid_train$NEUMONIA*7+covid_train$EPOC+covid_train$INMUSUPR*2+covid_train$edad40*(-6)+covid_train$DIABETES*covid_train$edad40*4
+covid_train$score<-covid_train$edad65*3+covid_train$DIABETES+covid_train$OBESIDAD+covid_train$RENAL_CRONICA*3+
+  covid_train$NEUMONIA*7+covid_train$EPOC+covid_train$INMUSUPR+covid_train$edad40*(-6)+covid_train$DIABETES*covid_train$edad40*5
 
 
 mod1_pts<-coxph(Surv(FU_time, Mortalidad)~score, data=covid_train)
@@ -553,8 +559,8 @@ mod1_ptcat<-coxph(Surv(FU_time, Mortalidad)~score_cat, data=covid_train)
 summary(mod1_ptcat)
 
 ##KM de la escala de puntos
-covid_test$score<-covid_test$edad65*3+covid_test$DIABETES+covid_test$OBESIDAD+covid_test$RENAL_CRONICA*2+covid_test$EMBARAZO*4+
-  covid_test$NEUMONIA*7+covid_test$EPOC+covid_test$INMUSUPR*2+covid_test$edad40*(-6)+covid_test$DIABETES*covid_test$edad40*4
+covid_test$score<-covid_test$edad65*3+covid_test$DIABETES+covid_test$OBESIDAD+covid_test$RENAL_CRONICA*3+
+  covid_test$NEUMONIA*7+covid_test$EPOC+covid_test$INMUSUPR+covid_test$edad40*(-6)+covid_test$DIABETES*covid_test$edad40*5
 
 
 table(covid_test$score)
@@ -574,11 +580,11 @@ cox_score_cat<-ggsurvplot(cox_score, data = covid_train, size = 1,palette = "bw"
                                                                              "High-Risk",
                                                                              "Very High Risk"),
                                                              xlim = c(0,30),
-                                                             ylim= c(0.8,1.0),
+                                                             ylim= c(0.4,1.0),
                                                              break.y.by= c(0.05),
                                                              break.x.by= c(5),
                                                              pval.coord = c(0, 0.80))
-
+cox_score_cat
 cox_score1<-cox_score_cat + theme_survminer(base_size = 10,
                                                 base_family = "Arial",
                                                 font.x = c(10, "plain" ), 
@@ -596,7 +602,7 @@ cox_score_cat2<-ggsurvplot(cox_score2, data = covid_test, size = 1,palette = "bw
                                           "High-Risk",
                                           "Very High Risk"),
                           xlim = c(0,30),
-                          ylim= c(0.8,1.0),
+                          ylim= c(0.4,1.0),
                           break.y.by= c(0.05),
                           break.x.by= c(5),
                           pval.coord = c(0, 0.80))
@@ -610,8 +616,8 @@ cox_score3<-cox_score_cat2 + theme_survminer(base_size = 10,
 
 figure5<-arrange_ggsurvplots(list(cox_score1,cox_score3),
                              ncol=2,nrow =1)
-
-ggsave(file = "Figure5.png", 
+figure5
+ggsave(file = "Figure5.1.png", 
        print(figure5),
        bg = "transparent",
        width = 35, 
@@ -631,8 +637,8 @@ validate(mod1_pts1, method="crossvalidation",B=10, bw=FALSE, rule="bic",
          pr=FALSE, dxy=TRUE)
 
 #### Figure with histograms ####
-covid1$score<-covid1$edad65*3+covid1$DIABETES+covid1$OBESIDAD+covid1$RENAL_CRONICA*2+covid1$EMBARAZO*4+
-  covid1$NEUMONIA*7+covid1$EPOC+covid1$INMUSUPR*2+covid1$edad40*(-6)+covid1$DIABETES*covid1$edad40*4
+covid1$score<-covid1$edad65*3+covid1$DIABETES+covid1$OBESIDAD+covid1$RENAL_CRONICA*3+
+  covid1$NEUMONIA*7+covid1$EPOC+covid1$INMUSUPR+covid1$edad40*(-6)+covid1$DIABETES*covid1$edad40*5
 
 
 covid4<-covid1%>% dplyr::select(FECHA_SINTOMAS,diab_ob, Mortalidad, score)%>%drop_na()
@@ -674,6 +680,9 @@ mod1_pt<-coxph(Surv(FU_time, Mortalidad)~score, data=covid_test)
 summary(mod1_pt)
 cox.zph(mod1_pt)
 
-mod1_ptcat<-cph(Surv(FU_time, Mortalidad)~score_cat, data=covid_test)
+mod1_ptcat<-coxph(Surv(FU_time, Mortalidad)~score_cat, data=covid_test)
+summary(mod1_ptcat)
 summary(mod1_ptcat)
 cox.zph(mod1_ptcat)
+
+
