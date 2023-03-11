@@ -1,7 +1,11 @@
 ## STEVEN WAS HERE ##
 
-library(readr); library(tidyverse); library(survival); library(mediation); library(ggpubr); library(rms);library(caret)
-library(survminer); library(haven); library(rsq); library(ResourceSelection); library(ggsci);library(timereg); library(haven)
+## Original libraries to be ignored, scy
+##library(readr); library(tidyverse); library(survival); library(mediation); library(ggpubr); library(rms);library(caret)
+##library(survminer); library(haven); library(rsq); library(ResourceSelection); library(ggsci);library(timereg); library(haven)
+
+# New libraries specified by VP, scy
+library(readr); library(here); library(ggplot2); library(stringr); library(magrittr); library(dplyr); library(flextable)
 
 ## Manejo de la base de datos####
 setwd("/Users/nefoantonio/UNIVERSIDAD NACIONAL AUTÓNOMA DE MÉXICO/OMAR YAXMEHEN BELLO CHAVOLLA - COVID-19, Diabetes and obesity")
