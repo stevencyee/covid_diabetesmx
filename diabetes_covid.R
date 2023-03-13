@@ -7,8 +7,13 @@ library(readr); library(here); library(ggplot2); library(stringr); library(magri
 library(ggpubr); library(survival); library(mvtnorm); library(tidyr); library(survminer)
 
 ## Manejo de la base de datos####
-setwd("/Users/nefoantonio/UNIVERSIDAD NACIONAL AUTÓNOMA DE MÉXICO/OMAR YAXMEHEN BELLO CHAVOLLA - COVID-19, Diabetes and obesity")
-setwd("C:/Users/HP-PC/OneDrive - UNIVERSIDAD NACIONAL AUTÓNOMA DE MÉXICO/COVID-19, Diabetes and obesity")
+# setwd("/Users/nefoantonio/UNIVERSIDAD NACIONAL AUTÓNOMA DE MÉXICO/OMAR YAXMEHEN BELLO CHAVOLLA - COVID-19, Diabetes and obesity")
+# setwd("C:/Users/HP-PC/OneDrive - UNIVERSIDAD NACIONAL AUTÓNOMA DE MÉXICO/COVID-19, Diabetes and obesity")
+# covid <- read_csv("200518COVID19MEXICO.csv")
+
+## New working directory
+here::i_am("diabetes_covid.R")
+setwd(here())
 covid <- read_csv("200518COVID19MEXICO.csv")
 
 
